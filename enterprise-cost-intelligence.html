@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ECIA — Enterprise Cost Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080b10;
+    --bg2: #0d1117;
+    --bg3: #131a24;
+    --bg4: #1a2333;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8edf5;
+    --muted: #6b7a8d;
+    --accent: #00d4ff;
+    --accent2: #7c3aed;
+    --green: #00e5a0;
+    --amber: #f59e0b;
+    --red: #ef4444;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'Space Grotesk', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ─── LAYOUT ─── */
+  .shell { display: flex; height: 100vh; position: relative; z-index: 1; }
+
+  /* ─── SIDEBAR ─── */
+  .sidebar {
+    width: 220px;
+    min-width: 220px;
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow: hidden;
+  }
+  .logo {
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .logo-mark {
+    font-family: var(--mono);
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+  }
+  .logo-sub {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+  .nav { flex: 1; padding: 12px 0; overflow-y: auto; }
+  .nav-section { padding: 8px 16px 4px; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 16px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--muted);
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .nav-item:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+  .nav-item.active { color: var(--accent); border-left-color: var(--accent); background: rgba(0,212,255,0.05); }
+  .nav-item .icon { width: 16px; height: 16px; opacity: 0.7; flex-shrink: 0; }
+  .nav-item.active .icon { opacity: 1; }
+
+  .status-bar {
+    padding: 14px 16px;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    font-family: var(--mono);
+  }
+  .status-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--green); margin-right: 6px; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  /* ─── MAIN ─── */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  .topbar {
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg2);
+    flex-shrink: 0;
+  }
+  .topbar-title { font-size: 14px; font-weight: 600; letter-spacing: 0.02em; }
+  .topbar-meta { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+  .topbar-actions { display: flex; gap: 8px; align-items: center; }
+  .btn {
+    padding: 7px 14px;
+    border-radius: 5px;
+    font-size: 12px;
+    font-family: var(--sans);
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+    letter-spacing: 0.02em;
+  }
+  .btn-ghost { background: transparent; border: 1px solid var(--border2); color: var(--muted); }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-primary { background: var(--accent); color: #000; font-weight: 600; }
+  .btn-primary:hover { background: #33ddff; transform: translateY(-1px); }
+  .badge {
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-family: var(--mono);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+  }
+  .badge-green { background: rgba(0,229,160,0.15); color: var(--green); border: 1px solid rgba(0,229,160,0.3); }
+  .badge-amber { background: rgba(245,158,11,0.15); color: var(--amber); border: 1px solid rgba(245,158,11,0.3); }
+  .badge-red { background: rgba(239,68,68,0.15); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
+  .badge-blue { background: rgba(0,212,255,0.12); color: var(--accent); border: 1px solid rgba(0,212,255,0.25); }
+
+  /* ─── CONTENT ─── */
+  .content { flex: 1; overflow-y: auto; padding: 24px; }
+  .content::-webkit-scrollbar { width: 4px; }
+  .content::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 2px; }
+
+  /* ─── VIEWS ─── */
+  .view { display: none; animation: fadeIn 0.2s ease; }
+  .view.active { display: block; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+  /* ─── KPI GRID ─── */
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+  .kpi-card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .kpi-card:hover { border-color: var(--border2); }
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .kpi-card.green::before { background: var(--green); }
+  .kpi-card.amber::before { background: var(--amber); }
+  .kpi-card.red::before { background: var(--red); }
+  .kpi-card.blue::before { background: var(--accent); }
+  .kpi-label { font-size: 11px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 8px; }
+  .kpi-value { font-size: 28px; font-weight: 700; font-family: var(--mono); line-height: 1; margin-bottom: 6px; }
+  .kpi-value.green { color: var(--green); }
+  .kpi-value.amber { color: var(--amber); }
+  .kpi-value.red { color: var(--red); }
+  .kpi-value.blue { color: var(--accent); }
+  .kpi-delta { font-size: 11px; color: var(--muted); }
+  .kpi-delta span { color: var(--green); }
+
+  /* ─── GRID LAYOUT ─── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .span-2 { grid-column: span 2; }
+
+  /* ─── PANEL ─── */
+  .panel {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .panel-header {
+    padding: 13px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .panel-title { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+  .panel-body { padding: 16px; }
+
+  /* ─── TABLE ─── */
+  .data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .data-table th {
+    text-align: left; padding: 8px 12px;
+    font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--muted); border-bottom: 1px solid var(--border);
+    font-weight: 500;
+  }
+  .data-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .mono { font-family: var(--mono); }
+  .text-green { color: var(--green); }
+  .text-amber { color: var(--amber); }
+  .text-red { color: var(--red); }
+  .text-blue { color: var(--accent); }
+  .text-muted { color: var(--muted); }
+
+  /* ─── PROGRESS BAR ─── */
+  .progress-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 12px; }
+  .progress-label { width: 130px; flex-shrink: 0; color: var(--muted); font-size: 11px; }
+  .progress-track { flex: 1; height: 4px; background: var(--bg4); border-radius: 2px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 2px; transition: width 1s ease; }
+  .progress-val { width: 45px; text-align: right; font-family: var(--mono); font-size: 11px; color: var(--muted); }
+
+  /* ─── ANOMALY LIST ─── */
+  .anomaly-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 12px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    background: var(--bg4);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .anomaly-item:hover { border-color: var(--accent); }
+  .anomaly-icon { width: 32px; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 14px; }
+  .anomaly-icon.red { background: rgba(239,68,68,0.15); }
+  .anomaly-icon.amber { background: rgba(245,158,11,0.15); }
+  .anomaly-icon.blue { background: rgba(0,212,255,0.12); }
+  .anomaly-title { font-size: 13px; font-weight: 500; margin-bottom: 3px; }
+  .anomaly-meta { font-size: 11px; color: var(--muted); }
+  .anomaly-impact { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--green); margin-left: auto; white-space: nowrap; padding-left: 10px; }
+
+  /* ─── AI CHAT ─── */
+  .chat-container {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 60px);
+  }
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .chat-messages::-webkit-scrollbar { width: 4px; }
+  .chat-messages::-webkit-scrollbar-thumb { background: var(--bg4); }
+  .msg {
+    max-width: 80%;
+    animation: msgIn 0.2s ease;
+  }
+  @keyframes msgIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+  .msg.user { align-self: flex-end; }
+  .msg.ai { align-self: flex-start; }
+  .msg-bubble {
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .msg.user .msg-bubble {
+    background: rgba(0,212,255,0.15);
+    border: 1px solid rgba(0,212,255,0.25);
+    color: var(--text);
+  }
+  .msg.ai .msg-bubble {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+  .msg-label { font-size: 10px; color: var(--muted); margin-bottom: 4px; letter-spacing: 0.06em; font-family: var(--mono); }
+  .msg.user .msg-label { text-align: right; }
+  .chat-input-area {
+    padding: 16px 20px;
+    border-top: 1px solid var(--border);
+    background: var(--bg2);
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+  }
+  .chat-input {
+    flex: 1;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 13px;
+    resize: none;
+    outline: none;
+    transition: border-color 0.15s;
+    min-height: 42px;
+    max-height: 120px;
+  }
+  .chat-input:focus { border-color: var(--accent); }
+  .chat-input::placeholder { color: var(--muted); }
+  .send-btn {
+    width: 42px; height: 42px;
+    background: var(--accent);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.15s;
+    color: #000;
+    font-size: 16px;
+  }
+  .send-btn:hover:not(:disabled) { background: #33ddff; transform: translateY(-1px); }
+  .send-btn:disabled { opacity: 0.4; cursor: default; transform: none; }
+  .typing-indicator { display: flex; gap: 4px; align-items: center; padding: 4px 0; }
+  .typing-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--muted); animation: typingBounce 1.2s infinite; }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes typingBounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-4px)} }
+  .quick-prompts { padding: 0 20px 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .quick-btn {
+    padding: 5px 12px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    font-size: 11px;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: var(--sans);
+  }
+  .quick-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .ai-result-card {
+    background: var(--bg4);
+    border: 1px solid rgba(0,212,255,0.2);
+    border-radius: 6px;
+    padding: 12px;
+    margin-top: 10px;
+    font-size: 12px;
+  }
+  .ai-result-card .result-header { font-family: var(--mono); font-size: 10px; color: var(--accent); margin-bottom: 8px; letter-spacing: 0.08em; }
+  .result-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--border); }
+  .result-row:last-child { border: none; }
+  .result-key { color: var(--muted); }
+  .result-val { font-family: var(--mono); font-weight: 500; }
+
+  /* ─── AGENT CARDS ─── */
+  .agent-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .agent-card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    transition: border-color 0.2s, transform 0.2s;
+    cursor: pointer;
+  }
+  .agent-card:hover { border-color: var(--border2); transform: translateY(-2px); }
+  .agent-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .agent-icon { font-size: 22px; }
+  .agent-name { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .agent-desc { font-size: 12px; color: var(--muted); line-height: 1.5; margin-bottom: 14px; }
+  .agent-stats { display: flex; gap: 20px; }
+  .agent-stat-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 3px; }
+  .agent-stat-value { font-family: var(--mono); font-size: 16px; font-weight: 600; }
+
+  /* ─── SPARKLINE ─── */
+  .sparkline { height: 40px; overflow: hidden; }
+  svg.spark { width: 100%; height: 40px; }
+
+  /* ─── PLAYBOOK ─── */
+  .playbook-step {
+    display: flex; gap: 14px;
+    padding: 14px;
+    background: var(--bg4);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin-bottom: 8px;
+    align-items: flex-start;
+  }
+  .step-num {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: rgba(0,212,255,0.15);
+    border: 1px solid rgba(0,212,255,0.3);
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .step-title { font-size: 13px; font-weight: 500; margin-bottom: 3px; }
+  .step-desc { font-size: 11px; color: var(--muted); line-height: 1.5; }
+  .step-meta { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+
+  /* ─── APPROVAL QUEUE ─── */
+  .approval-item {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .approval-item:last-child { border-bottom: none; }
+  .approval-body { flex: 1 }
+  .approval-title { font-size: 13px; font-weight: 500; margin-bottom: 3px; }
+  .approval-meta { font-size: 11px; color: var(--muted); }
+  .approval-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .approve-btn { padding: 5px 12px; background: rgba(0,229,160,0.15); border: 1px solid rgba(0,229,160,0.3); color: var(--green); border-radius: 4px; font-size: 11px; cursor: pointer; font-family: var(--sans); transition: all 0.15s; }
+  .approve-btn:hover { background: rgba(0,229,160,0.25); }
+  .reject-btn { padding: 5px 12px; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25); color: var(--red); border-radius: 4px; font-size: 11px; cursor: pointer; font-family: var(--sans); transition: all 0.15s; }
+  .reject-btn:hover { background: rgba(239,68,68,0.2); }
+
+  /* ─── TIMELINE ─── */
+  .timeline-item { display: flex; gap: 12px; padding: 10px 0; font-size: 12px; border-bottom: 1px solid var(--border); }
+  .timeline-item:last-child { border-bottom: none; }
+  .tl-time { font-family: var(--mono); font-size: 10px; color: var(--muted); width: 60px; flex-shrink: 0; padding-top: 2px; }
+  .tl-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
+  .tl-body { flex: 1; }
+  .tl-title { font-weight: 500; margin-bottom: 2px; }
+  .tl-desc { color: var(--muted); font-size: 11px; }
+
+  /* ─── MINI CHART ─── */
+  .chart-wrap { padding: 0 4px; }
+  canvas { display: block; width: 100% !important; }
+
+  /* ─── SCROLLBAR ─── */
+  * { scrollbar-width: thin; scrollbar-color: var(--bg4) transparent; }
+
+  .section-title { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; margin-top: 20px; }
+  .section-title:first-child { margin-top: 0; }
+
+  .full-width { width: 100%; }
+
+  .tag { display: inline-block; padding: 2px 7px; border-radius: 3px; font-size: 10px; font-family: var(--mono); background: var(--bg4); border: 1px solid var(--border); color: var(--muted); margin-right: 4px; }
+
+  /* ─── RESPONSIVE hints ─── */
+  @media (max-width: 1100px) {
+    .kpi-grid { grid-template-columns: repeat(2,1fr); }
+    .grid-2 { grid-template-columns: 1fr; }
+    .agent-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- ─── SIDEBAR ─── -->
+  <nav class="sidebar">
+    <div class="logo">
+      <div class="logo-mark">ECIA</div>
+      <div class="logo-sub">Cost Intelligence</div>
+    </div>
+    <div class="nav">
+      <div class="nav-section">Overview</div>
+      <div class="nav-item active" onclick="nav('dashboard',this)">
+        <svg class="icon" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="9" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="1" y="9" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="9" y="9" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.2"/></svg>
+        Dashboard
+      </div>
+      <div class="nav-item" onclick="nav('agents',this)">
+        <svg class="icon" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="currentColor" stroke-width="1.2"/><path d="M2 14c0-3.31 2.69-6 6-6s6 2.69 6 6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        AI Agents
+      </div>
+      <div class="nav-item" onclick="nav('anomalies',this)">
+        <svg class="icon" viewBox="0 0 16 16" fill="none"><path d="M8 2L14 13H2L8 2Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><path d="M8 7v3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><circle cx="8" cy="11.5" r="0.5" fill="currentColor"/></svg>
+        Anomalies
+      </div>
+      <div class="nav-section">Operations</div>
+      <div class="nav-item" onclick="nav('approvals',this)">
+        <svg class="icon" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.2"/><path d="M5 8l2 2 4-4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Approvals
+        <span style="margin-left:auto;background:var(--red);color:#fff;font-size:9px;font-family:var(--mono);padding:1px 5px;border-radius:10px;">3</span>
+      </div>
+      <div class="nav-item" onclick="nav('playbook',this)">
+        <svg class="icon" viewBox="0 0 16 16" fill="none"><path d="M3 2h10v12H3z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><path d="M5 5h6M5 8h6M5 11h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        Playbooks
+      </div>
+      <div class="nav-section">Intelligence</div>
+      <div class="nav-item" onclick="nav('chat',this)">
+        <svg class="icon" viewBox="0 0 16 16" fill="none"><path d="M14 8c0 3.31-2.69 6-6 6a5.96 5.96 0 01-3.5-1.13L2 14l1.13-2.5A5.96 5.96 0 012 8c0-3.31 2.69-6 6-6s6 2.69 6 6z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
+        AI Analyst
+      </div>
+      <div class="nav-item" onclick="nav('activity',this)">
+        <svg class="icon" viewBox="0 0 16 16" fill="none"><path d="M1 8h2l2-5 3 10 2-7 2 4 1-2h2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Activity Log
+      </div>
+    </div>
+    <div class="status-bar">
+      <span class="status-dot"></span>
+      <span style="color:var(--green);font-size:11px;">All agents live</span><br>
+      <span style="color:var(--muted);font-size:10px;">Last sync: just now</span>
+    </div>
+  </nav>
+
+  <!-- ─── MAIN ─── -->
+  <div class="main">
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div>
+        <div class="topbar-title" id="page-title">Cost Intelligence Dashboard</div>
+        <div class="topbar-meta" id="page-meta">Q2 2025 · Fiscal period active · 4 agents running</div>
+      </div>
+      <div class="topbar-actions">
+        <span class="badge badge-green">● LIVE</span>
+        <button class="btn btn-ghost">Export</button>
+        <button class="btn btn-primary" onclick="nav('chat',document.querySelector('.nav-item:nth-child(9)'))">Ask AI</button>
+      </div>
+    </div>
+
+    <!-- ─── CONTENT AREA ─── -->
+    <div class="content">
+
+      <!-- ──────────────── DASHBOARD ──────────────── -->
+      <div id="view-dashboard" class="view active">
+
+        <div class="kpi-grid">
+          <div class="kpi-card green">
+            <div class="kpi-label">Total savings identified</div>
+            <div class="kpi-value green" id="kpi1">$0</div>
+            <div class="kpi-delta"><span>↑ 23%</span> vs last quarter</div>
+          </div>
+          <div class="kpi-card red">
+            <div class="kpi-label">Active anomalies</div>
+            <div class="kpi-value red" id="kpi2">0</div>
+            <div class="kpi-delta"><span style="color:var(--red)">↑ 4</span> new today</div>
+          </div>
+          <div class="kpi-card amber">
+            <div class="kpi-label">SLA breaches prevented</div>
+            <div class="kpi-value amber" id="kpi3">0</div>
+            <div class="kpi-delta"><span>$128K</span> penalty avoided</div>
+          </div>
+          <div class="kpi-card blue">
+            <div class="kpi-label">Actions executed</div>
+            <div class="kpi-value blue" id="kpi4">0</div>
+            <div class="kpi-delta"><span>47</span> auto · <span>16</span> approved</div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <!-- Anomaly feed -->
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title">Top anomalies</span>
+              <span class="badge badge-red">7 unresolved</span>
+            </div>
+            <div class="panel-body" style="padding:10px">
+              <div class="anomaly-item" onclick="nav('chat',document.querySelector('.nav-item:nth-child(9)'));injectQ('Analyze the AWS duplicate billing anomaly and suggest remediation')">
+                <div class="anomaly-icon red">⚠</div>
+                <div style="flex:1">
+                  <div class="anomaly-title">Duplicate AWS billing detected</div>
+                  <div class="anomaly-meta">EC2 · us-east-1 · Identified 2h ago</div>
+                </div>
+                <div class="anomaly-impact">+$18,400</div>
+              </div>
+              <div class="anomaly-item" onclick="nav('chat',document.querySelector('.nav-item:nth-child(9)'));injectQ('Analyze the vendor contract rate discrepancy with Salesforce')">
+                <div class="anomaly-icon amber">⚡</div>
+                <div style="flex:1">
+                  <div class="anomaly-title">Vendor contract rate discrepancy</div>
+                  <div class="anomaly-meta">Salesforce · CRM module · 3 days overdue</div>
+                </div>
+                <div class="anomaly-impact">+$9,200/mo</div>
+              </div>
+              <div class="anomaly-item" onclick="nav('chat',document.querySelector('.nav-item:nth-child(9)'));injectQ('Which SaaS tools have unused seats and what is the savings potential?')">
+                <div class="anomaly-icon blue">◎</div>
+                <div style="flex:1">
+                  <div class="anomaly-title">47 unused SaaS seats detected</div>
+                  <div class="anomaly-meta">Zoom · Notion · Figma · Confluence</div>
+                </div>
+                <div class="anomaly-impact">$6,580/mo</div>
+              </div>
+              <div class="anomaly-item" onclick="nav('chat',document.querySelector('.nav-item:nth-child(9)'));injectQ('What GL reconciliation discrepancies were found this quarter?')">
+                <div class="anomaly-icon amber">⚡</div>
+                <div style="flex:1">
+                  <div class="anomaly-title">GL reconciliation gap — AP cycle</div>
+                  <div class="anomaly-meta">Finance · Q2 close · $3.2K variance</div>
+                </div>
+                <div class="anomaly-impact">$3,200</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Spend by category -->
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title">Spend by category</span>
+              <span class="badge badge-amber">↑ 8% MoM</span>
+            </div>
+            <div class="panel-body">
+              <div class="progress-row">
+                <span class="progress-label">Cloud Infrastructure</span>
+                <div class="progress-track"><div class="progress-fill" style="width:78%;background:var(--red)"></div></div>
+                <span class="progress-val text-red">$2.4M</span>
+              </div>
+              <div class="progress-row">
+                <span class="progress-label">SaaS Subscriptions</span>
+                <div class="progress-track"><div class="progress-fill" style="width:55%;background:var(--amber)"></div></div>
+                <span class="progress-val text-amber">$1.7M</span>
+              </div>
+              <div class="progress-row">
+                <span class="progress-label">Professional Services</span>
+                <div class="progress-track"><div class="progress-fill" style="width:42%;background:var(--accent)"></div></div>
+                <span class="progress-val text-blue">$1.3M</span>
+              </div>
+              <div class="progress-row">
+                <span class="progress-label">Headcount (contract)</span>
+                <div class="progress-track"><div class="progress-fill" style="width:30%;background:var(--accent2)"></div></div>
+                <span class="progress-val" style="color:#a78bfa">$920K</span>
+              </div>
+              <div class="progress-row">
+                <span class="progress-label">Facilities & Ops</span>
+                <div class="progress-track"><div class="progress-fill" style="width:18%;background:var(--green)"></div></div>
+                <span class="progress-val text-green">$560K</span>
+              </div>
+              <div class="progress-row">
+                <span class="progress-label">Travel & Expense</span>
+                <div class="progress-track"><div class="progress-fill" style="width:12%;background:var(--muted)"></div></div>
+                <span class="progress-val text-muted">$380K</span>
+              </div>
+              <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:12px">
+                <span class="text-muted">Optimization potential identified</span>
+                <span class="text-green mono" style="font-weight:600">$847K / yr</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <!-- Agent status -->
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title">Agent performance</span>
+              <button class="btn btn-ghost" style="padding:4px 10px;font-size:11px" onclick="nav('agents',document.querySelector('.nav-item:nth-child(3)'))">View all →</button>
+            </div>
+            <table class="data-table full-width">
+              <thead><tr>
+                <th>Agent</th><th>Status</th><th>Findings</th><th>Savings</th><th>Accuracy</th>
+              </tr></thead>
+              <tbody>
+                <tr>
+                  <td><span style="font-weight:500">Spend Intel</span></td>
+                  <td><span class="badge badge-green">Running</span></td>
+                  <td class="mono">24</td>
+                  <td class="mono text-green">$312K</td>
+                  <td class="mono">94.2%</td>
+                </tr>
+                <tr>
+                  <td><span style="font-weight:500">SLA Guard</span></td>
+                  <td><span class="badge badge-green">Running</span></td>
+                  <td class="mono">8</td>
+                  <td class="mono text-green">$128K</td>
+                  <td class="mono">97.8%</td>
+                </tr>
+                <tr>
+                  <td><span style="font-weight:500">Resource Opt</span></td>
+                  <td><span class="badge badge-amber">Scanning</span></td>
+                  <td class="mono">31</td>
+                  <td class="mono text-green">$247K</td>
+                  <td class="mono">91.5%</td>
+                </tr>
+                <tr>
+                  <td><span style="font-weight:500">FinOps</span></td>
+                  <td><span class="badge badge-green">Running</span></td>
+                  <td class="mono">12</td>
+                  <td class="mono text-green">$88K</td>
+                  <td class="mono">98.1%</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Recent actions -->
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title">Recent actions taken</span>
+            </div>
+            <div style="padding:4px 0">
+              <div class="timeline-item">
+                <span class="tl-time">14:23</span>
+                <span class="tl-dot" style="background:var(--green)"></span>
+                <div class="tl-body">
+                  <div class="tl-title">Terminated 12 idle EC2 instances</div>
+                  <div class="tl-desc">Resource Opt · Auto-executed · Saves $2,340/mo</div>
+                </div>
+              </div>
+              <div class="timeline-item">
+                <span class="tl-time">13:47</span>
+                <span class="tl-dot" style="background:var(--amber)"></span>
+                <div class="tl-body">
+                  <div class="tl-title">SLA breach alert — Ticket TK-8821</div>
+                  <div class="tl-desc">SLA Guard · Rerouted to Tier-2 · Breach prevented</div>
+                </div>
+              </div>
+              <div class="timeline-item">
+                <span class="tl-time">11:02</span>
+                <span class="tl-dot" style="background:var(--accent)"></span>
+                <div class="tl-body">
+                  <div class="tl-title">Vendor rate negotiation playbook generated</div>
+                  <div class="tl-desc">Spend Intel · 5-step playbook · Awaiting approval</div>
+                </div>
+              </div>
+              <div class="timeline-item">
+                <span class="tl-time">09:18</span>
+                <span class="tl-dot" style="background:var(--green)"></span>
+                <div class="tl-body">
+                  <div class="tl-title">GL discrepancy auto-reconciled</div>
+                  <div class="tl-desc">FinOps · $3,200 variance corrected · Audit logged</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ──────────────── AGENTS ──────────────── -->
+      <div id="view-agents" class="view">
+        <div class="agent-grid">
+
+          <div class="agent-card" onclick="nav('chat',document.querySelector('.nav-item:nth-child(9)'));injectQ('Give me a full analysis report from the Spend Intelligence agent this quarter')">
+            <div class="agent-header">
+              <span class="agent-icon">🔍</span>
+              <span class="badge badge-green">Active</span>
+            </div>
+            <div class="agent-name">Spend Intelligence Agent</div>
+            <div class="agent-desc">Monitors procurement, vendor contracts, and operational spend data to detect anomalies, duplicate costs, and rate optimization opportunities. Generates ranked savings playbooks.</div>
+            <div class="agent-stats">
+              <div><div class="agent-stat-label">Savings found</div><div class="agent-stat-value text-green">$312K</div></div>
+              <div><div class="agent-stat-label">Anomalies</div><div class="agent-stat-value text-amber">24</div></div>
+              <div><div class="agent-stat-label">Accuracy</div><div class="agent-stat-value text-blue">94.2%</div></div>
+            </div>
+          </div>
+
+          <div class="agent-card" onclick="nav('chat',document.querySelector('.nav-item:nth-child(9)'));injectQ('Show me the SLA breach prevention analysis — which contracts are at risk this week?')">
+            <div class="agent-header">
+              <span class="agent-icon">🛡</span>
+              <span class="badge badge-green">Active</span>
+            </div>
+            <div class="agent-name">SLA Breach Prevention Agent</div>
+            <div class="agent-desc">Detects approaching SLA breaches from operational signals and reroutes work, shifts resources, or escalates before financial penalties land.</div>
+            <div class="agent-stats">
+              <div><div class="agent-stat-label">Prevented</div><div class="agent-stat-value text-green">8</div></div>
+              <div><div class="agent-stat-label">Penalties avoided</div><div class="agent-stat-value text-green">$128K</div></div>
+              <div><div class="agent-stat-label">Accuracy</div><div class="agent-stat-value text-blue">97.8%</div></div>
+            </div>
+          </div>
+
+          <div class="agent-card" onclick="nav('chat',document.querySelector('.nav-item:nth-child(9)'));injectQ('List all resource optimization recommendations — cloud, tools, and team utilization')">
+            <div class="agent-header">
+              <span class="agent-icon">⚡</span>
+              <span class="badge badge-amber">Scanning</span>
+            </div>
+            <div class="agent-name">Resource Optimization Agent</div>
+            <div class="agent-desc">Monitors utilization across cloud infrastructure, SaaS tools, and team allocations. Recommends consolidation and can execute approved changes autonomously.</div>
+            <div class="agent-stats">
+              <div><div class="agent-stat-label">Opportunities</div><div class="agent-stat-value text-amber">31</div></div>
+              <div><div class="agent-stat-label">Savings</div><div class="agent-stat-value text-green">$247K</div></div>
+              <div><div class="agent-stat-label">Auto-executed</div><div class="agent-stat-value text-blue">14</div></div>
+            </div>
+          </div>
+
+          <div class="agent-card" onclick="nav('chat',document.querySelector('.nav-item:nth-child(9)'));injectQ('Run a financial close variance analysis for Q2 and identify root causes')">
+            <div class="agent-header">
+              <span class="agent-icon">📊</span>
+              <span class="badge badge-green">Active</span>
+            </div>
+            <div class="agent-name">Financial Operations Agent</div>
+            <div class="agent-desc">Reconciles transactions, flags discrepancies, and produces variance analyses with root-cause attribution to accelerate financial close cycles.</div>
+            <div class="agent-stats">
+              <div><div class="agent-stat-label">Reconciled</div><div class="agent-stat-value text-green">1,247</div></div>
+              <div><div class="agent-stat-label">Flags</div><div class="agent-stat-value text-red">12</div></div>
+              <div><div class="agent-stat-label">Close speed</div><div class="agent-stat-value text-blue">3.2×</div></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ──────────────── ANOMALIES ──────────────── -->
+      <div id="view-anomalies" class="view">
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">All anomalies</span>
+            <div style="display:flex;gap:8px">
+              <span class="badge badge-red">3 critical</span>
+              <span class="badge badge-amber">4 warning</span>
+            </div>
+          </div>
+          <table class="data-table full-width">
+            <thead><tr>
+              <th>Severity</th><th>Description</th><th>Agent</th><th>Source</th><th>Detected</th><th>Impact</th><th>Status</th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <td><span class="badge badge-red">Critical</span></td>
+                <td style="font-weight:500">Duplicate AWS billing</td>
+                <td class="text-muted">Resource Opt</td>
+                <td class="mono text-muted">AWS Cost Explorer</td>
+                <td class="mono text-muted">2h ago</td>
+                <td class="mono text-red">$18,400</td>
+                <td><span class="badge badge-amber">In review</span></td>
+              </tr>
+              <tr>
+                <td><span class="badge badge-red">Critical</span></td>
+                <td style="font-weight:500">Vendor rate discrepancy — Salesforce</td>
+                <td class="text-muted">Spend Intel</td>
+                <td class="mono text-muted">Procurement API</td>
+                <td class="mono text-muted">3d ago</td>
+                <td class="mono text-red">$9,200/mo</td>
+                <td><span class="badge badge-red">Escalated</span></td>
+              </tr>
+              <tr>
+                <td><span class="badge badge-red">Critical</span></td>
+                <td style="font-weight:500">SLA breach risk — SVC-4421</td>
+                <td class="text-muted">SLA Guard</td>
+                <td class="mono text-muted">ServiceNow</td>
+                <td class="mono text-muted">45m ago</td>
+                <td class="mono text-red">$45,000</td>
+                <td><span class="badge badge-blue">Auto-rerouted</span></td>
+              </tr>
+              <tr>
+                <td><span class="badge badge-amber">Warning</span></td>
+                <td style="font-weight:500">47 unused SaaS seats</td>
+                <td class="text-muted">Resource Opt</td>
+                <td class="mono text-muted">Okta + billing</td>
+                <td class="mono text-muted">1d ago</td>
+                <td class="mono text-amber">$6,580/mo</td>
+                <td><span class="badge badge-amber">Pending</span></td>
+              </tr>
+              <tr>
+                <td><span class="badge badge-amber">Warning</span></td>
+                <td style="font-weight:500">GL reconciliation gap — AP</td>
+                <td class="text-muted">FinOps</td>
+                <td class="mono text-muted">Oracle ERP</td>
+                <td class="mono text-muted">6h ago</td>
+                <td class="mono text-amber">$3,200</td>
+                <td><span class="badge badge-green">Resolved</span></td>
+              </tr>
+              <tr>
+                <td><span class="badge badge-amber">Warning</span></td>
+                <td style="font-weight:500">12 idle EC2 instances (dev)</td>
+                <td class="text-muted">Resource Opt</td>
+                <td class="mono text-muted">AWS API</td>
+                <td class="mono text-muted">14h ago</td>
+                <td class="mono text-amber">$2,340/mo</td>
+                <td><span class="badge badge-green">Auto-resolved</span></td>
+              </tr>
+              <tr>
+                <td><span class="badge badge-amber">Warning</span></td>
+                <td style="font-weight:500">Procurement PO mismatch ×3</td>
+                <td class="text-muted">Spend Intel</td>
+                <td class="mono text-muted">SAP Ariba</td>
+                <td class="mono text-muted">2d ago</td>
+                <td class="mono text-amber">$1,870</td>
+                <td><span class="badge badge-amber">In review</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ──────────────── APPROVALS ──────────────── -->
+      <div id="view-approvals" class="view">
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">Pending approvals</span>
+            <span class="badge badge-red">3 awaiting action</span>
+          </div>
+          <div id="approval-list">
+            <div class="approval-item" id="appr-1">
+              <div style="width:36px;height:36px;border-radius:8px;background:rgba(245,158,11,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px">📋</div>
+              <div class="approval-body">
+                <div class="approval-title">Vendor contract renegotiation — Salesforce</div>
+                <div class="approval-meta">Spend Intel · $9,200/mo savings · 5-step playbook ready · Risk: Low</div>
+                <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
+                  <span class="tag">Estimated savings: $110K/yr</span>
+                  <span class="tag">Effort: 3 days</span>
+                  <span class="tag">Confidence: 92%</span>
+                </div>
+              </div>
+              <div class="approval-actions">
+                <button class="approve-btn" onclick="approveAction('appr-1','Vendor contract renegotiation approved and scheduled')">Approve</button>
+                <button class="reject-btn" onclick="approveAction('appr-1','Rejected')">Reject</button>
+              </div>
+            </div>
+            <div class="approval-item" id="appr-2">
+              <div style="width:36px;height:36px;border-radius:8px;background:rgba(239,68,68,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px">☁</div>
+              <div class="approval-body">
+                <div class="approval-title">Terminate 8 oversized RDS instances</div>
+                <div class="approval-meta">Resource Opt · $4,800/mo savings · Validated idle >30 days · Risk: Medium</div>
+                <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
+                  <span class="tag">Prod-adjacent</span>
+                  <span class="tag">Backup verified</span>
+                  <span class="tag">Confidence: 87%</span>
+                </div>
+              </div>
+              <div class="approval-actions">
+                <button class="approve-btn" onclick="approveAction('appr-2','RDS termination approved — scheduled for 02:00 maintenance window')">Approve</button>
+                <button class="reject-btn" onclick="approveAction('appr-2','Rejected')">Reject</button>
+              </div>
+            </div>
+            <div class="approval-item" id="appr-3">
+              <div style="width:36px;height:36px;border-radius:8px;background:rgba(0,212,255,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px">💺</div>
+              <div class="approval-body">
+                <div class="approval-title">Revoke 47 unused SaaS licenses</div>
+                <div class="approval-meta">Resource Opt · $6,580/mo savings · Zero logins in 90 days · Risk: Low</div>
+                <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
+                  <span class="tag">Zoom: 18 seats</span>
+                  <span class="tag">Notion: 14 seats</span>
+                  <span class="tag">Figma: 9 seats</span>
+                  <span class="tag">Other: 6</span>
+                </div>
+              </div>
+              <div class="approval-actions">
+                <button class="approve-btn" onclick="approveAction('appr-3','SaaS seat revocation approved — notifications sent to users')">Approve</button>
+                <button class="reject-btn" onclick="approveAction('appr-3','Rejected')">Reject</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ──────────────── PLAYBOOK ──────────────── -->
+      <div id="view-playbook" class="view">
+        <div class="panel" style="margin-bottom:16px">
+          <div class="panel-header">
+            <span class="panel-title">Active playbook — Salesforce vendor renegotiation</span>
+            <span class="badge badge-amber">In progress</span>
+          </div>
+          <div class="panel-body">
+            <div style="margin-bottom:12px;font-size:12px;color:var(--muted);display:flex;gap:20px">
+              <span>Potential savings: <strong style="color:var(--green)">$110K/yr</strong></span>
+              <span>Effort: <strong style="color:var(--text)">3 days</strong></span>
+              <span>Confidence: <strong style="color:var(--accent)">92%</strong></span>
+              <span>Generated by: <strong style="color:var(--text)">Spend Intelligence Agent</strong></span>
+            </div>
+            <div class="playbook-step">
+              <div class="step-num">1</div>
+              <div>
+                <div class="step-title">Pull current contract & invoice data</div>
+                <div class="step-desc">Extract all Salesforce invoices from SAP Ariba (last 24 months). Cross-reference against signed MSA rates. Identify all line items billed above contract rate.</div>
+                <div class="step-meta"><span class="badge badge-green">Complete</span><span class="tag">Ariba API</span><span class="tag">Automated</span></div>
+              </div>
+            </div>
+            <div class="playbook-step">
+              <div class="step-num">2</div>
+              <div>
+                <div class="step-title">Quantify the overcharge & build evidence package</div>
+                <div class="step-desc">Total discrepancy: $9,200/mo for 11 months = $101,200. Prepare structured evidence doc with invoice line items, contract clauses, and benchmark pricing from Gartner data.</div>
+                <div class="step-meta"><span class="badge badge-green">Complete</span><span class="tag">$101,200 documented</span></div>
+              </div>
+            </div>
+            <div class="playbook-step">
+              <div class="step-num">3</div>
+              <div>
+                <div class="step-title">Schedule vendor meeting — Procurement lead</div>
+                <div class="step-desc">Draft outreach email to Salesforce account executive. CC legal and procurement. Set agenda: billing discrepancy review + rate alignment discussion. Target: within 5 business days.</div>
+                <div class="step-meta"><span class="badge badge-amber">In progress</span><span class="tag">Human action needed</span><span class="tag">Template ready</span></div>
+              </div>
+            </div>
+            <div class="playbook-step">
+              <div class="step-num">4</div>
+              <div>
+                <div class="step-title">Negotiate corrected rate + backdated credit</div>
+                <div class="step-desc">Target outcome: revert to MSA rate ($48,200/mo → $39,000/mo), issue credit for 11-month overcharge ($101,200). Fall-back: accept prospective rate correction only.</div>
+                <div class="step-meta"><span class="badge badge-blue">Pending</span><span class="tag">Negotiation</span></div>
+              </div>
+            </div>
+            <div class="playbook-step">
+              <div class="step-num">5</div>
+              <div>
+                <div class="step-title">Update vendor master & configure rate monitoring</div>
+                <div class="step-desc">Update SAP vendor master with corrected rate. Configure Spend Intelligence Agent to flag future invoices above the agreed rate within 24 hours of receipt.</div>
+                <div class="step-meta"><span class="badge badge-blue">Pending</span><span class="tag">Automated</span><span class="tag">Ongoing monitoring</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ──────────────── AI CHAT ──────────────── -->
+      <div id="view-chat" class="view" style="margin:-24px">
+        <div class="chat-container">
+          <div class="chat-messages" id="chat-messages">
+            <div class="msg ai">
+              <div class="msg-label">ECIA AI ANALYST</div>
+              <div class="msg-bubble">
+                I'm your enterprise cost intelligence analyst, powered by AI. I have full visibility into your spend data, vendor contracts, SLA status, resource utilization, and financial operations.
+                <br><br>
+                I can detect anomalies, generate savings playbooks, forecast cost trends, and explain any finding in detail. What would you like to investigate?
+              </div>
+            </div>
+          </div>
+          <div class="quick-prompts" id="quick-prompts">
+            <button class="quick-btn" onclick="sendQuick('What are our top 3 cost-saving opportunities this quarter?')">Top savings opportunities</button>
+            <button class="quick-btn" onclick="sendQuick('Which SLA contracts are at risk of breach this week?')">SLA breach risks</button>
+            <button class="quick-btn" onclick="sendQuick('Summarize the Q2 financial close variance analysis')">Q2 variance analysis</button>
+            <button class="quick-btn" onclick="sendQuick('What cloud resources should we consolidate or terminate?')">Cloud optimization</button>
+            <button class="quick-btn" onclick="sendQuick('Generate a spend intelligence report for the board')">Board report</button>
+          </div>
+          <div class="chat-input-area">
+            <textarea class="chat-input" id="chat-input" placeholder="Ask about costs, anomalies, vendors, resources…" rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+            <button class="send-btn" id="send-btn" onclick="sendMessage()">➤</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ──────────────── ACTIVITY ──────────────── -->
+      <div id="view-activity" class="view">
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">Agent activity log</span>
+            <span class="badge badge-blue">Real-time</span>
+          </div>
+          <div class="panel-body" style="padding:0">
+            <table class="data-table full-width">
+              <thead><tr><th>Time</th><th>Agent</th><th>Action</th><th>Outcome</th><th>Financial impact</th></tr></thead>
+              <tbody>
+                <tr><td class="mono text-muted">14:23:12</td><td class="text-muted">Resource Opt</td><td>Terminated 12 idle EC2 instances</td><td><span class="badge badge-green">Auto-executed</span></td><td class="mono text-green">−$2,340/mo</td></tr>
+                <tr><td class="mono text-muted">14:09:44</td><td class="text-muted">SLA Guard</td><td>Rerouted TK-8821 to Tier-2 queue</td><td><span class="badge badge-green">Breach prevented</span></td><td class="mono text-green">$45,000 saved</td></tr>
+                <tr><td class="mono text-muted">13:47:02</td><td class="text-muted">Spend Intel</td><td>Vendor rate discrepancy escalated</td><td><span class="badge badge-amber">Human notified</span></td><td class="mono text-amber">$9,200/mo risk</td></tr>
+                <tr><td class="mono text-muted">13:12:55</td><td class="text-muted">FinOps</td><td>GL variance auto-reconciled</td><td><span class="badge badge-green">Resolved</span></td><td class="mono text-green">$3,200 corrected</td></tr>
+                <tr><td class="mono text-muted">12:30:18</td><td class="text-muted">Spend Intel</td><td>Duplicate AWS billing flagged</td><td><span class="badge badge-amber">In review</span></td><td class="mono text-red">$18,400 risk</td></tr>
+                <tr><td class="mono text-muted">11:58:40</td><td class="text-muted">Resource Opt</td><td>Unused SaaS seats identified (47)</td><td><span class="badge badge-amber">Awaiting approval</span></td><td class="mono text-green">$6,580/mo</td></tr>
+                <tr><td class="mono text-muted">10:44:22</td><td class="text-muted">FinOps</td><td>AP cycle reconciliation complete</td><td><span class="badge badge-green">Auto-executed</span></td><td class="mono text-green">1,247 txns cleared</td></tr>
+                <tr><td class="mono text-muted">09:18:03</td><td class="text-muted">SLA Guard</td><td>SLA risk model retrained (weekly)</td><td><span class="badge badge-blue">Model updated</span></td><td class="mono text-muted">Accuracy: 97.8%</td></tr>
+                <tr><td class="mono text-muted">08:00:00</td><td class="text-muted">All agents</td><td>Daily data sync from ERP + Cloud</td><td><span class="badge badge-green">Sync complete</span></td><td class="mono text-muted">14 sources</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /shell -->
+
+<script>
+// ─── NAVIGATION ───
+function nav(id, el) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  if (el) el.classList.add('active');
+  const titles = {
+    dashboard: ['Cost Intelligence Dashboard', 'Q2 2025 · Fiscal period active · 4 agents running'],
+    agents: ['AI Agent Management', '4 agents deployed · All systems nominal'],
+    anomalies: ['Anomaly Detection', '7 active anomalies · 3 critical'],
+    approvals: ['Approval Queue', '3 actions awaiting human review'],
+    playbook: ['Cost Playbooks', '1 active · 8 completed this quarter'],
+    chat: ['AI Analyst', 'Powered by Claude · Full data access'],
+    activity: ['Activity Log', 'Real-time agent action feed'],
+  };
+  document.getElementById('page-title').textContent = titles[id][0];
+  document.getElementById('page-meta').textContent = titles[id][1];
+}
+
+// ─── KPI COUNTER ANIMATION ───
+function animateKPI(id, end, prefix='', suffix='') {
+  const el = document.getElementById(id);
+  let start = 0;
+  const dur = 1600;
+  const step = 16;
+  const inc = end / (dur / step);
+  const t = setInterval(() => {
+    start = Math.min(start + inc, end);
+    if (end > 1000) el.textContent = prefix + '$' + (start / 1000).toFixed(start < end ? 1 : 0) + 'K' + suffix;
+    else el.textContent = prefix + Math.floor(start) + suffix;
+    if (start >= end) clearInterval(t);
+  }, step);
+}
+animateKPI('kpi1', 775000);
+animateKPI('kpi2', 7, '');
+animateKPI('kpi3', 8, '');
+animateKPI('kpi4', 63, '');
+
+// ─── APPROVALS ───
+function approveAction(id, msg) {
+  const el = document.getElementById(id);
+  el.style.opacity = '0.4';
+  el.style.pointerEvents = 'none';
+  el.querySelector('.approval-actions').innerHTML = '<span class="badge badge-green" style="font-size:11px;padding:4px 10px">' + msg + '</span>';
+  el.style.transition = 'opacity 0.3s';
+}
+
+// ─── INJECT QUESTION INTO CHAT ───
+function injectQ(q) {
+  setTimeout(() => { document.getElementById('chat-input').value = q; }, 50);
+}
+
+// ─── CHAT ───
+const API_URL = 'https://api.anthropic.com/v1/messages';
+const systemPrompt = `You are ECIA, an elite AI analyst embedded in an Enterprise Cost Intelligence platform. You have full access to the company's financial and operational data.
+
+Current data context:
+- Total spend monitored: $7.26M/quarter
+- Cloud (AWS/GCP/Azure): $2.4M — 12 idle EC2 instances terminated today, duplicate billing of $18,400 flagged
+- SaaS subscriptions: $1.7M — 47 unused seats identified ($6,580/mo waste)
+- Vendor contracts: Salesforce discrepancy of $9,200/mo (11 months = $101,200 overcharge)
+- GL reconciliation: $3,200 variance resolved; 1,247 transactions auto-reconciled
+- SLA status: 8 breaches prevented this quarter, $128K penalties avoided; TK-8821 rerouted
+- Resource utilization: 8 oversized RDS instances flagged for termination ($4,800/mo)
+- Total savings identified: $775K this quarter
+- Agents running: Spend Intelligence (94.2% accuracy), SLA Guard (97.8%), Resource Optimization (91.5%), FinOps (98.1%)
+
+When answering:
+- Be specific, data-driven, and cite actual numbers from the context above
+- Provide structured analysis with clear financial impact figures
+- For playbooks, give numbered action steps with owner, timeline, and expected savings
+- Keep responses concise but substantive — executives need clarity, not padding
+- Use dollar figures, percentages, and timeframes wherever possible
+- When relevant, flag urgency or recommend immediate action`;
+
+let chatHistory = [];
+
+async function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const q = input.value.trim();
+  if (!q) return;
+  input.value = '';
+  input.style.height = 'auto';
+
+  document.getElementById('quick-prompts').style.display = 'none';
+
+  appendMsg('user', q);
+  chatHistory.push({ role: 'user', content: q });
+
+  const typingId = appendTyping();
+  document.getElementById('send-btn').disabled = true;
+
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: chatHistory
+      })
+    });
+    const data = await res.json();
+    removeTyping(typingId);
+    const reply = data.content?.[0]?.text || 'Unable to get a response. Please try again.';
+    appendMsg('ai', reply);
+    chatHistory.push({ role: 'assistant', content: reply });
+  } catch (e) {
+    removeTyping(typingId);
+    appendMsg('ai', 'Connection error. Please check your network and try again.');
+  }
+  document.getElementById('send-btn').disabled = false;
+}
+
+function appendMsg(role, text) {
+  const msgs = document.getElementById('chat-messages');
+  const wrap = document.createElement('div');
+  wrap.className = 'msg ' + role;
+  const label = document.createElement('div');
+  label.className = 'msg-label';
+  label.textContent = role === 'user' ? 'YOU' : 'ECIA AI ANALYST';
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble';
+  bubble.style.whiteSpace = 'pre-wrap';
+  bubble.textContent = text;
+  wrap.appendChild(label);
+  wrap.appendChild(bubble);
+  msgs.appendChild(wrap);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function appendTyping() {
+  const msgs = document.getElementById('chat-messages');
+  const wrap = document.createElement('div');
+  wrap.className = 'msg ai';
+  const id = 'typing-' + Date.now();
+  wrap.id = id;
+  const label = document.createElement('div');
+  label.className = 'msg-label';
+  label.textContent = 'ECIA AI ANALYST';
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble';
+  bubble.innerHTML = '<div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
+  wrap.appendChild(label);
+  wrap.appendChild(bubble);
+  msgs.appendChild(wrap);
+  msgs.scrollTop = msgs.scrollHeight;
+  return id;
+}
+
+function removeTyping(id) {
+  const el = document.getElementById(id);
+  if (el) el.remove();
+}
+
+function sendQuick(q) {
+  document.getElementById('chat-input').value = q;
+  sendMessage();
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+</script>
+</body>
+</html>
